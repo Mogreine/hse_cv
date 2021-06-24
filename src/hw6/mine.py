@@ -19,7 +19,7 @@ from efficientnet_pytorch import EfficientNet
 from sklearn.neighbors import NearestNeighbors
 from time import time
 
-from definitions import ROOT_DIR, IMGS_DIR, TEST_PATH, N_WORKERS
+from definitions import ROOT_DIR, IMGS_DIR, TEST_PATH, N_WORKERS, BATCH_SIZE, K_NEIGHBOURS
 
 
 def read_and_convert(name):
@@ -44,18 +44,27 @@ def read_imgs():
 
 
 class ImageSearcher:
-    def __init__(self, device: str = "cpu", n_nei: int = 5, algorithm: str = "auto", leaf_size: int = 100, n_jobs: int = -1):
-        self.cluster_model = NearestNeighbors(n_neighbors=n_nei, algorithm=algorithm, leaf_size=leaf_size, n_jobs=n_jobs)
+    def __init__(
+        self, device: str = "cpu", n_nei: int = 5, algorithm: str = "auto", leaf_size: int = 100, n_jobs: int = -1
+    ):
+        self.cluster_model = NearestNeighbors(
+            n_neighbors=n_nei, algorithm=algorithm, leaf_size=leaf_size, n_jobs=n_jobs
+        )
 
-        self.emb_model = EfficientNet.from_pretrained('efficientnet-b0')
+        self.emb_model = EfficientNet.from_pretrained("efficientnet-b0")
         self.emb_model.to(device)
         self.emb_model.eval()
 
         for p in self.emb_model.parameters():
             p.requires_grad = False
 
-        self.tfms = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor(),
-                                   transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]), ])
+        self.tfms = transforms.Compose(
+            [
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ]
+        )
 
         self.images = None
         self.device = device
@@ -67,7 +76,7 @@ class ImageSearcher:
         steps = len(images) // batch_size + (len(images) % batch_size != 0)
         res = []
         for i in tqdm(range(steps)):
-            batch = images[i * batch_size: (i + 1) * batch_size].to(self.device)
+            batch = images[i * batch_size : (i + 1) * batch_size].to(self.device)
 
             res.append(self.emb_model.extract_features(batch).flatten(start_dim=1))
 
@@ -110,12 +119,12 @@ if __name__ == "__main__":
 
     print("Fitting model...")
     start = time()
-    searcher.fit(train, 256)
+    searcher.fit(train, BATCH_SIZE)
     print(f"Finished fitting, elapsed time: {(time() - start) / 60} min")
 
     print("Validating...")
     start = time()
-    searcher.find_closest(test, 5, 32)
+    searcher.find_closest(test, K_NEIGHBOURS, BATCH_SIZE)
     print(f"Finished validating, elapsed time: {(time() - start) / 60 / len(test)} min for a single query")
 
     print("Done!")
