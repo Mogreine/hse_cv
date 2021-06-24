@@ -19,7 +19,7 @@ from efficientnet_pytorch import EfficientNet
 from sklearn.neighbors import NearestNeighbors
 from time import time
 
-from definitions import ROOT_DIR, IMGS_DIR, TEST_PATH, N_WORKERS, BATCH_SIZE, K_NEIGHBOURS
+from definitions import ROOT_DIR, IMGS_DIR, TEST_PATH, N_WORKERS, BATCH_SIZE, K_NEIGHBOURS, PRETRAINED_EMBEDDINGS_PATH
 
 
 def read_and_convert(name):
@@ -94,15 +94,21 @@ class ImageSearcher:
 
         return res.cpu()
 
-    def fit(self, images, batch_size: int = 32):
-        # assert len(images.shape) == 4, "Wrong shapes"
-
+    def fit(self, images, batch_size: int = 32, embeddings_path: str = None):
         self.images = deepcopy(images)
 
-        im_transformed = self.prep_image(images)
-        im_embedding = self.get_embeddings(im_transformed, batch_size).numpy()
+        if embeddings_path is None:
+            im_transformed = self.prep_image(images)
+            im_embedding = self.get_embeddings(im_transformed, batch_size).numpy()
 
-        print("Finished extracting features")
+            with open("train_embedding.npy", "wb") as f:
+                np.save(f, im_embedding)
+
+            print("Finished extracting features")
+        else:
+            print(f"Loading saved embeddings...")
+            with open(embeddings_path, "rb") as f:
+                im_embedding = np.load(f)
 
         self.cluster_model.fit(im_embedding)
 
@@ -166,7 +172,7 @@ if __name__ == "__main__":
 
     print("Fitting model...")
     start = time()
-    searcher.fit(train, BATCH_SIZE)
+    searcher.fit(train, BATCH_SIZE, PRETRAINED_EMBEDDINGS_PATH)
     print(f"Finished fitting, elapsed time: {(time() - start) / 60: .2f} min")
 
     print("Validating...")
