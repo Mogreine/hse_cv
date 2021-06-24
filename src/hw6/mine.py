@@ -114,7 +114,8 @@ if __name__ == "__main__":
     print("Reading imgs...")
     train, test = read_imgs()
     print("Done reading")
-
+    
+    device = torch.device("cuda") if torch.cuda.is_available else torch.device("cpu")
     searcher = ImageSearcher()
 
     print("Fitting model...")
