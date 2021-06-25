@@ -76,10 +76,6 @@ class ImageSearcher:
 
     def prep_image(self, images):
         tmp = [self.tfms(im.convert("RGB")).unsqueeze(0) for im in images]
-        # tmp = []
-        # for im in images:
-        #     im = im.convert("RGB")
-        #     tmp.append(self.tfms(im).unsqueeze(0))
         return torch.cat(tmp, dim=0)
 
     def get_embeddings(self, images: torch.Tensor, batch_size: int = 32):
