@@ -155,6 +155,7 @@ def read_and_convert(name):
 
 def read_imgs():
     p = mp.Pool(N_WORKERS)
+
     img_names = np.sort(
         [file_name for file_name in os.listdir(IMGS_DIR) if os.path.isfile(os.path.join(IMGS_DIR, file_name))]
     )
